@@ -6,19 +6,32 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware.js';
 import { ApiKeyGuard } from './common/guards/api-key.guard.js';
 import { TimingInterceptor } from './common/interceptors/timing.interceptor.js';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter.js';
+import { UserModule } from './user/user.module.js';
+import { DrizzleModule } from '@nestjs/drizzle';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [],
+  imports: [
+    ConfigModule.forRoot({
+      envFilePath: '.env.local',
+    }),
+    UserModule,
+    DrizzleModule.forRoot({
+      drizzle,
+      connection: process.env.DATABASE_URL!,
+    }),
+  ],
   controllers: [AppController],
   providers: [
     AppService,
     // Global Guard: dùng token APP_GUARD (không dùng app.useGlobalGuards()
     // trong main.ts) để Nest's DI container tự inject Reflector vào
     // ApiKeyGuard. Áp dụng cho MỌI route, trừ route gắn @Public().
-    { provide: APP_GUARD, useClass: ApiKeyGuard },
+    // { provide: APP_GUARD, useClass: ApiKeyGuard },
     // Global Interceptor: đo thời gian + log cho MỌI handler, không cần
     // lặp lại @UseInterceptors() ở từng route/controller nữa.
-    { provide: APP_INTERCEPTOR, useClass: TimingInterceptor },
+    // { provide: APP_INTERCEPTOR, useClass: TimingInterceptor },
     // Global Filter: bắt MỌI exception (cả lỗi không lường trước), format
     // response lỗi thống nhất cho toàn app.
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
